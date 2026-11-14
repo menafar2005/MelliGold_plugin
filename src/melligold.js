@@ -1,9 +1,7 @@
-'use strict';
-
-class MelligoldUnavailableError extends Error {}
+export class MelligoldUnavailableError extends Error {}
 
 /** Returns the mock response body, or null on 404. Throws MelligoldUnavailableError otherwise. */
-async function findByMobile(mobile) {
+export async function findByMobile(mobile) {
   const base = (process.env.MELLIGOLD_BASE_URL || '').replace(/\/$/, '');
   let res;
   try {
@@ -22,5 +20,3 @@ async function findByMobile(mobile) {
     throw new MelligoldUnavailableError('bad json');
   }
 }
-
-module.exports = { findByMobile, MelligoldUnavailableError };

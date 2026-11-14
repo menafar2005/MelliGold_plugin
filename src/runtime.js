@@ -1,14 +1,12 @@
-'use strict';
-
 const RUNTIME_TOKEN_URL = 'https://marketplace.didar.me/api/v1/runtime/token';
 
-class LaunchExpiredError extends Error {}
+export class LaunchExpiredError extends Error {}
 
 /**
  * Exchange the one-time launchCode for the runtime context.
  * The accessToken in the response is intentionally discarded: data is read via API Key.
  */
-async function exchangeLaunchCode(launchCode) {
+export async function exchangeLaunchCode(launchCode) {
   if (!launchCode) throw new LaunchExpiredError('missing launchCode');
   let res;
   try {
@@ -36,5 +34,3 @@ async function exchangeLaunchCode(launchCode) {
     entityId: Array.isArray(ctx.entityIds) ? ctx.entityIds[0] : undefined,
   };
 }
-
-module.exports = { exchangeLaunchCode, LaunchExpiredError };

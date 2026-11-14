@@ -1,30 +1,38 @@
 # melligold-plugin (demo)
 
-Didar marketplace plugin: a Custom panel on Deal details and Person details showing the contact's Melli Gold balance (grams + Toman value), fed by `melligold-mock`.
+Didar marketplace plugin, running as a Cloudflare Worker: a Custom panel on Deal details and Person details showing the contact's Melli Gold balance (grams + Toman value), fed by `melligold-mock`.
 
-## Run
+## Deploy (Cloudflare)
+
+Deploy command: `npx wrangler deploy` (config in `wrangler.jsonc`).
+
+Set secrets once (Dashboard → Worker → Settings → Variables and Secrets, or CLI):
 
 ```bash
-npm install
-cp .env.example .env   # fill in values (use a TEST business API key)
-npm start
+npx wrangler secret put DIDAR_API_KEY
+npx wrangler secret put DIDAR_CLIENT_ID
+npx wrangler secret put DIDAR_CLIENT_SECRET
+npx wrangler secret put MELLIGOLD_BASE_URL
+npx wrangler secret put MELLIGOLD_API_KEY
 ```
 
-Developer Hub requires HTTPS, so expose the plugin through a tunnel (`cloudflared tunnel --url http://localhost:3000` or ngrok). `melligold-mock` does not need to be exposed.
+`melligold-mock` must be reachable from the internet (HTTPS) since the Worker calls it. Use a TEST business API key.
+
+## Local
+
+Copy `.dev.vars.example` to `.dev.vars`, fill it in, run `npm run dev`. Developer Hub needs HTTPS, so use the deployed URL or a tunnel. Tests: `npm test`.
 
 ## Register in Developer Hub
 
 | Field | Value |
 |---|---|
-| Callback URL | `https://<PLUGIN_HOST>/install/callback` |
+| Callback URL | `https://<WORKER_HOST>/install/callback` |
 | Scopes | `deals`, `contacts` |
 | Extension | Custom panel |
 | Panel name | موجودی ملی گلد |
-| Iframe URL | `https://<PLUGIN_HOST>/panel` |
+| Iframe URL | `https://<WORKER_HOST>/panel` |
 | JWT secret | any random 32-byte string (unused in demo) |
 | Panel locations | Deal details, Person details |
-
-Copy the Client ID / Secret into `.env`, then install the plugin in the test business.
 
 ## Flow
 
@@ -32,4 +40,4 @@ Copy the Client ID / Secret into `.env`, then install the plugin in the test bus
 2. Deal page → `getdealdetail` → `PersonId`; Person page → `entityIds[0]`.
 3. `GetContactDetail` → mobiles (`src/phone.js`) → `melligold-mock` `/api/v1/users/by-mobile/:mobile`.
 
-Secrets stay server-side. Tests: `npm test`.
+Secrets stay server-side.

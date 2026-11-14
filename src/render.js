@@ -1,6 +1,4 @@
-'use strict';
-
-const MESSAGES = {
+﻿const MESSAGES = {
   not_found: 'این شخص در ملی گلد حساب ندارد.',
   no_phone: 'برای این شخص شماره‌ی موبایل ثبت نشده.',
   no_person: 'این معامله طرف معامله‌ی شخص ندارد.',
@@ -17,7 +15,7 @@ const nf = new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 3 });
 const tf = new Intl.DateTimeFormat('fa-IR', { timeZone: 'Asia/Tehran', dateStyle: 'medium', timeStyle: 'short' });
 
 function maskMobile(m) {
-  const digits = nf.format(0) === '۰' ? m.replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[d]) : m;
+  const digits = m.replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[d]);
   return `${digits.slice(0, 4)}•••${digits.slice(-4)}`;
 }
 
@@ -42,11 +40,11 @@ function page(inner) {
 </html>`;
 }
 
-function renderState(state) {
+export function renderState(state) {
   return page(`<div class="msg">${esc(MESSAGES[state] || MESSAGES.didar_error)}</div>`);
 }
 
-function renderSuccess({ displayName, mobile, gold }) {
+export function renderSuccess({ displayName, mobile, gold }) {
   const when = gold.updatedAt ? tf.format(new Date(gold.updatedAt)) : '';
   return page(`
 <div class="title">موجودی ملی گلد · ${esc(displayName)}</div>
@@ -56,8 +54,6 @@ function renderSuccess({ displayName, mobile, gold }) {
 <div class="muted">پیداشده با ${esc(maskMobile(mobile))}</div>`);
 }
 
-function renderInstalled(ok) {
+export function renderInstalled(ok) {
   return page(`<div class="msg">${ok ? 'نصب شد.' : 'نصب کامل نشد.'}</div>`);
 }
-
-module.exports = { renderState, renderSuccess, renderInstalled };

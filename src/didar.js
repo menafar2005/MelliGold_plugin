@@ -1,10 +1,8 @@
-'use strict';
-
 const EMPTY_GUID = '00000000-0000-0000-0000-000000000000';
 
-class DidarError extends Error {}
+export class DidarError extends Error {}
 
-async function post(path, body) {
+export async function post(path, body) {
   const base = process.env.DIDAR_BASE_URL || 'https://app.didar.me';
   let res;
   try {
@@ -25,13 +23,13 @@ async function post(path, body) {
 }
 
 /** Returns personId, or null when the deal has no person. */
-async function getPersonIdFromDeal(dealId) {
+export async function getPersonIdFromDeal(dealId) {
   const deal = await post('/api/deal/getdealdetail', { Id: dealId });
   const id = deal.PersonId;
   return !id || id === EMPTY_GUID ? null : id;
 }
 
-async function getPerson(personId) {
+export async function getPerson(personId) {
   const p = await post('/api/contact/GetContactDetail', { Id: personId });
   const others = (p.OtherPhones && Array.isArray(p.OtherPhones.KeyValues) ? p.OtherPhones.KeyValues : []).map((kv) => kv && kv.Value);
   return {
@@ -39,5 +37,3 @@ async function getPerson(personId) {
     phones: [p.MobilePhone, ...others].filter((v) => typeof v === 'string'),
   };
 }
-
-module.exports = { getPersonIdFromDeal, getPerson, DidarError };

@@ -1,8 +1,6 @@
-'use strict';
-
-const test = require('node:test');
-const assert = require('node:assert');
-const { extractMobiles } = require('../src/phone');
+import test from 'node:test';
+import assert from 'node:assert';
+import { extractMobiles } from '../src/phone.js';
 
 test('normalizes the spec examples to 09121234567', () => {
   for (const input of ['+989121234567', '۰۹۱۲ ۱۲۳ ۴۵۶۷', 'موبایل 09121234567', '0912-123-4567', '00989121234567']) {

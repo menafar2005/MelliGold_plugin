@@ -2,15 +2,14 @@
   "name": "melligold-plugin",
   "version": "0.1.0",
   "private": true,
-  "description": "Didar marketplace demo plugin: shows Melli Gold balance in a Custom panel",
-  "main": "src/server.js",
-  "engines": { "node": ">=20.6" },
+  "type": "module",
+  "description": "Didar marketplace demo plugin: shows Melli Gold balance in a Custom panel (Cloudflare Worker)",
   "scripts": {
-    "start": "node --env-file=.env src/server.js",
-    "dev": "node --watch --env-file=.env src/server.js",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
     "test": "node --test test/phone.test.js"
   },
-  "dependencies": {
-    "express": "^4.19.2"
+  "devDependencies": {
+    "wrangler": "^4.0.0"
   }
 }

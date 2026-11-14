@@ -1,54 +1,47 @@
-'use strict';
-
-const express = require('express');
-const { exchangeLaunchCode, LaunchExpiredError } = require('./runtime');
-const { getPersonIdFromDeal, getPerson } = require('./didar');
-const { findByMobile } = require('./melligold');
-const { extractMobiles } = require('./phone');
-const { renderState, renderSuccess, renderInstalled } = require('./render');
-
-const app = express();
-app.disable('x-powered-by');
+﻿import { exchangeLaunchCode, LaunchExpiredError } from './runtime.js';
+import { getPersonIdFromDeal, getPerson } from './didar.js';
+import { findByMobile } from './melligold.js';
+import { extractMobiles } from './phone.js';
+import { renderState, renderSuccess, renderInstalled } from './render.js';
 
 const LOCATION_DEAL = 2;
 const LOCATION_PERSON = 4;
 
-function sendHtml(res, html) {
-  res.set({ 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }).send(html);
-}
+const html = (body, status = 200) =>
+  new Response(body, {
+    status,
+    headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+  });
 
-app.get('/healthz', (_req, res) => res.json({ ok: true }));
-
-app.get('/install/callback', async (req, res) => {
-  const code = req.query.code;
+async function install(url) {
   try {
     const r = await fetch('https://app.didar.me/api/MarketplaceInstall/CompleteInstallation', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        Code: code,
+        Code: url.searchParams.get('code'),
         ClientId: process.env.DIDAR_CLIENT_ID,
         ClientSecret: process.env.DIDAR_CLIENT_SECRET,
       }),
       signal: AbortSignal.timeout(8000),
     });
     const json = await r.json().catch(() => ({}));
-    const ok = json.Response && json.Response.Succeeded === true;
+    const ok = !!(json.Response && json.Response.Succeeded === true);
     if (ok) console.log('install complete, BizDomainId:', json.Response.BizDomainId);
     else console.warn('install failed, status', r.status);
-    sendHtml(res, renderInstalled(ok));
+    return html(renderInstalled(ok));
   } catch {
     console.warn('install request error');
-    sendHtml(res, renderInstalled(false));
+    return html(renderInstalled(false));
   }
-});
+}
 
-app.get('/panel', async (req, res) => {
-  const reply = (state) => sendHtml(res, renderState(state));
+async function panel(url) {
+  const reply = (state) => html(renderState(state));
   try {
     let ctx;
     try {
-      ctx = await exchangeLaunchCode(req.query.launchCode);
+      ctx = await exchangeLaunchCode(url.searchParams.get('launchCode'));
     } catch (err) {
       if (err instanceof LaunchExpiredError) return reply('launch_expired');
       console.warn('runtime exchange error:', err.message);
@@ -88,7 +81,7 @@ app.get('/panel', async (req, res) => {
         return reply('unavailable');
       }
       if (data && data.gold) {
-        return sendHtml(res, renderSuccess({ displayName: person.displayName, mobile, gold: data.gold }));
+        return html(renderSuccess({ displayName: person.displayName, mobile, gold: data.gold }));
       }
     }
     return reply('not_found');
@@ -96,11 +89,21 @@ app.get('/panel', async (req, res) => {
     console.error('unexpected panel error:', err.message);
     return reply('didar_error');
   }
-});
-
-const port = Number(process.env.PORT) || 3000;
-if (require.main === module) {
-  app.listen(port, () => console.log(`melligold-plugin listening on :${port}`));
 }
 
-module.exports = app;
+export default {
+  async fetch(request) {
+    const url = new URL(request.url);
+    if (request.method !== 'GET') return new Response('Method Not Allowed', { status: 405 });
+    switch (url.pathname) {
+      case '/panel':
+        return panel(url);
+      case '/install/callback':
+        return install(url);
+      case '/healthz':
+        return Response.json({ ok: true });
+      default:
+        return new Response('Not Found', { status: 404 });
+    }
+  },
+};
