@@ -1,4 +1,5 @@
 ﻿import { exchangeLaunchCode, LaunchExpiredError } from './runtime.js';
+export { LaunchExchange } from './runtime.js';
 import { getPersonIdFromDeal, getPerson } from './didar.js';
 import { findByMobile } from './melligold.js';
 import { extractMobiles } from './phone.js';
@@ -43,9 +44,12 @@ async function panel(url) {
     try {
       ctx = await exchangeLaunchCode(url.searchParams.get('launchCode'));
     } catch (err) {
-      if (err instanceof LaunchExpiredError) return reply('launch_expired');
+      if (err instanceof LaunchExpiredError) {
+        console.warn('launch expired:', err.message);
+        return html(renderState('launch_expired', err.code));
+      }
       console.warn('runtime exchange error:', err.message);
-      return reply('didar_error');
+      return html(renderState('didar_error', err.code));
     }
 
     if (![LOCATION_DEAL, LOCATION_PERSON].includes(ctx.location) || !ctx.entityId) return reply('unsupported');

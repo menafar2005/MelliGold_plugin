@@ -40,8 +40,10 @@ function page(inner) {
 </html>`;
 }
 
-export function renderState(state) {
-  return page(`<div class="msg">${esc(MESSAGES[state] || MESSAGES.didar_error)}</div>`);
+/** `code` is a short, non-secret error code (e.g. LAUNCH_CODE_ALREADY_USED) shown small, for support. */
+export function renderState(state, code) {
+  const ref = code ? `<div class="muted" dir="ltr">${esc(code)}</div>` : '';
+  return page(`<div class="msg">${esc(MESSAGES[state] || MESSAGES.didar_error)}</div>${ref}`);
 }
 
 export function renderSuccess({ displayName, mobile, gold }) {
