@@ -5,6 +5,7 @@
   "compatibility_flags": ["nodejs_compat"],
   "vars": {
     "DIDAR_BASE_URL": "https://app.didar.me",
+    "DIDAR_CLIENT_ID": "be1652e6d6bfecc3d94514be6a43aca9",
     "MELLIGOLD_API_KEY": "mg_ZhlThctoZ7xAbx9mi_2cn1gw3tmOKJex"
   },
   "services": [
