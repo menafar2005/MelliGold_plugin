@@ -5,5 +5,8 @@
   "compatibility_flags": ["nodejs_compat"],
   "vars": {
     "DIDAR_BASE_URL": "https://app.didar.me"
-  }
+  },
+  "services": [
+    { "binding": "MELLIGOLD", "service": "melligold-data-source" }
+  ]
 }
