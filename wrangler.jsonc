@@ -3,6 +3,8 @@
   "main": "src/worker.js",
   "compatibility_date": "2025-09-01",
   "compatibility_flags": ["nodejs_compat"],
+  "keep_vars": true,
+  "observability": { "enabled": true },
   "vars": {
     "DIDAR_BASE_URL": "https://app.didar.me",
     "DIDAR_CLIENT_ID": "be1652e6d6bfecc3d94514be6a43aca9",
