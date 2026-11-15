@@ -3,13 +3,8 @@
   "main": "src/worker.js",
   "compatibility_date": "2025-09-01",
   "compatibility_flags": ["nodejs_compat"],
-  "keep_vars": true,
+  // All settings come from src/config.js; Worker vars/secrets are not read by the code.
   "observability": { "enabled": true },
-  "vars": {
-    "DIDAR_BASE_URL": "https://app.didar.me",
-    "DIDAR_CLIENT_ID": "be1652e6d6bfecc3d94514be6a43aca9",
-    "MELLIGOLD_API_KEY": "mg_ZhlThctoZ7xAbx9mi_2cn1gw3tmOKJex"
-  },
   "d1_databases": [
     {
       "binding": "DB",

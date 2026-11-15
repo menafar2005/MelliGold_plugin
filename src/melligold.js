@@ -1,5 +1,6 @@
 import { env } from 'cloudflare:workers';
 import { loggedFetch } from './log.js';
+import { config } from './config.js';
 
 export class MelligoldUnavailableError extends Error {}
 
@@ -15,7 +16,7 @@ function request(path, init) {
       fetcher: (u, i) => env.MELLIGOLD.fetch(new Request(u, i)),
     });
   }
-  const base = (process.env.MELLIGOLD_BASE_URL || '').replace(/\/$/, '');
+  const base = config.MELLIGOLD_BASE_URL.replace(/\/$/, '');
   return loggedFetch('melligold', `${base}${path}`, init);
 }
 
@@ -24,7 +25,7 @@ export async function findByMobile(mobile) {
   let res;
   try {
     res = await request(`/api/v1/users/by-mobile/${encodeURIComponent(mobile)}`, {
-      headers: { 'X-API-Key': process.env.MELLIGOLD_API_KEY || '' },
+      headers: { 'X-API-Key': config.MELLIGOLD_API_KEY },
       signal: AbortSignal.timeout(3000),
     });
   } catch {

@@ -1,15 +1,16 @@
 import { loggedFetch } from './log.js';
+import { config } from './config.js';
 
 const EMPTY_GUID = '00000000-0000-0000-0000-000000000000';
 
 export class DidarError extends Error {}
 
 export async function post(path, body) {
-  const base = process.env.DIDAR_BASE_URL || 'https://app.didar.me';
+  const base = config.DIDAR_BASE_URL.replace(/\/$/, '');
   let res;
   try {
     // API key goes in the query; the request log stores this URL unmasked by design.
-    res = await loggedFetch('didar_openapi', `${base}${path}?apikey=${encodeURIComponent(process.env.DIDAR_API_KEY || '')}`, {
+    res = await loggedFetch('didar_openapi', `${base}${path}?apikey=${encodeURIComponent(config.DIDAR_API_KEY)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

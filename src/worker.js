@@ -1,6 +1,7 @@
 ﻿import { exchangeLaunchCode, LaunchExpiredError } from './runtime.js';
 export { LaunchExchange } from './runtime.js';
 import { loggedFetch, withInboundLog } from './log.js';
+import { config } from './config.js';
 import { getPersonIdFromDeal, getPerson } from './didar.js';
 import { findByMobile } from './melligold.js';
 import { extractMobiles } from './phone.js';
@@ -17,13 +18,13 @@ const html = (body, status = 200) =>
 
 async function install(url) {
   try {
-    const r = await loggedFetch('didar_install', 'https://app.didar.me/api/MarketplaceInstall/CompleteInstallation', {
+    const r = await loggedFetch('didar_install', `${config.DIDAR_BASE_URL.replace(/\/$/, '')}/api/MarketplaceInstall/CompleteInstallation`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         Code: url.searchParams.get('code'),
-        ClientId: process.env.DIDAR_CLIENT_ID,
-        ClientSecret: process.env.DIDAR_CLIENT_SECRET,
+        ClientId: config.DIDAR_CLIENT_ID,
+        ClientSecret: config.DIDAR_CLIENT_SECRET,
       }),
       signal: AbortSignal.timeout(8000),
     });

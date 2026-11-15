@@ -1,7 +1,8 @@
 import { DurableObject, env } from 'cloudflare:workers';
 import { loggedFetch, requestScope } from './log.js';
+import { config } from './config.js';
 
-const RUNTIME_TOKEN_URL = 'https://marketplace.didar.me/api/v1/runtime/token';
+const RUNTIME_TOKEN_URL = `${config.MARKETPLACE_BASE_URL.replace(/\/$/, '')}/api/v1/runtime/token`;
 // How long a successful exchange is reused for repeat loads of the same launchCode.
 const REUSE_MS = 2 * 60 * 1000;
 
@@ -17,8 +18,8 @@ export class LaunchExpiredError extends Error {
  * cross the Durable Object RPC boundary (custom error classes don't survive it).
  */
 async function callMarketplace(launchCode, inboundId) {
-  if (!process.env.DIDAR_CLIENT_ID || !process.env.DIDAR_CLIENT_SECRET) {
-    return { ok: false, expired: false, reason: 'DIDAR_CLIENT_ID / DIDAR_CLIENT_SECRET are not set' };
+  if (!config.DIDAR_CLIENT_ID || !config.DIDAR_CLIENT_SECRET) {
+    return { ok: false, expired: false, code: 'CONFIG_MISSING', reason: 'DIDAR_CLIENT_ID / DIDAR_CLIENT_SECRET are empty in src/config.js' };
   }
   let res;
   try {
@@ -30,8 +31,8 @@ async function callMarketplace(launchCode, inboundId) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           launchCode,
-          clientId: process.env.DIDAR_CLIENT_ID,
-          clientSecret: process.env.DIDAR_CLIENT_SECRET,
+          clientId: config.DIDAR_CLIENT_ID,
+          clientSecret: config.DIDAR_CLIENT_SECRET,
         }),
         signal: AbortSignal.timeout(5000),
       },
