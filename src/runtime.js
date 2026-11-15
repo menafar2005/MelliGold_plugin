@@ -1,4 +1,5 @@
 import { DurableObject, env } from 'cloudflare:workers';
+import { loggedFetch, requestScope } from './log.js';
 
 const RUNTIME_TOKEN_URL = 'https://marketplace.didar.me/api/v1/runtime/token';
 // How long a successful exchange is reused for repeat loads of the same launchCode.
@@ -15,22 +16,27 @@ export class LaunchExpiredError extends Error {
  * One call to the marketplace. Never throws: returns a plain object so it can
  * cross the Durable Object RPC boundary (custom error classes don't survive it).
  */
-async function callMarketplace(launchCode) {
+async function callMarketplace(launchCode, inboundId) {
   if (!process.env.DIDAR_CLIENT_ID || !process.env.DIDAR_CLIENT_SECRET) {
     return { ok: false, expired: false, reason: 'DIDAR_CLIENT_ID / DIDAR_CLIENT_SECRET are not set' };
   }
   let res;
   try {
-    res = await fetch(RUNTIME_TOKEN_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        launchCode,
-        clientId: process.env.DIDAR_CLIENT_ID,
-        clientSecret: process.env.DIDAR_CLIENT_SECRET,
-      }),
-      signal: AbortSignal.timeout(5000),
-    });
+    res = await loggedFetch(
+      'didar_marketplace',
+      RUNTIME_TOKEN_URL,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          launchCode,
+          clientId: process.env.DIDAR_CLIENT_ID,
+          clientSecret: process.env.DIDAR_CLIENT_SECRET,
+        }),
+        signal: AbortSignal.timeout(5000),
+      },
+      { inboundId },
+    );
   } catch {
     return { ok: false, expired: false, reason: 'network error' };
   }
@@ -62,19 +68,19 @@ async function callMarketplace(launchCode) {
  * LAUNCH_CODE_ALREADY_USED. This object makes the exchange idempotent for REUSE_MS.
  */
 export class LaunchExchange extends DurableObject {
-  async exchange(launchCode) {
+  async exchange(launchCode, inboundId) {
     if (!this.pending) {
-      this.pending = this.run(launchCode);
+      this.pending = this.run(launchCode, inboundId);
       // Failures are not cached; a later retry gets a fresh attempt.
       this.pending.then((r) => { if (!r.ok) this.pending = null; }, () => { this.pending = null; });
     }
     return this.pending;
   }
 
-  async run(launchCode) {
+  async run(launchCode, inboundId) {
     const saved = await this.ctx.storage.get('result');
     if (saved && Date.now() - saved.at < REUSE_MS) return saved.result;
-    const result = await callMarketplace(launchCode);
+    const result = await callMarketplace(launchCode, inboundId);
     if (result.ok) {
       await this.ctx.storage.put('result', { at: Date.now(), result });
       await this.ctx.storage.setAlarm(Date.now() + REUSE_MS);
@@ -97,11 +103,13 @@ async function sha256(s) {
 export async function exchangeLaunchCode(launchCode) {
   if (!launchCode) throw new LaunchExpiredError('missing launchCode', 'NO_LAUNCH_CODE');
   let result;
+  const inboundId = requestScope.getStore()?.inboundId ?? null;
   if (env.LAUNCH) {
     const stub = env.LAUNCH.get(env.LAUNCH.idFromName(await sha256(launchCode)));
-    result = await stub.exchange(launchCode);
+    // The exchange runs inside the Durable Object, so the inbound id is passed explicitly for the log row.
+    result = await stub.exchange(launchCode, inboundId);
   } else {
-    result = await callMarketplace(launchCode);
+    result = await callMarketplace(launchCode, inboundId);
   }
   if (result.ok) return result.context;
   if (result.expired) throw new LaunchExpiredError(result.reason, result.code);

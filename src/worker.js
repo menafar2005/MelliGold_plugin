@@ -1,5 +1,6 @@
 ﻿import { exchangeLaunchCode, LaunchExpiredError } from './runtime.js';
 export { LaunchExchange } from './runtime.js';
+import { loggedFetch, withInboundLog } from './log.js';
 import { getPersonIdFromDeal, getPerson } from './didar.js';
 import { findByMobile } from './melligold.js';
 import { extractMobiles } from './phone.js';
@@ -16,7 +17,7 @@ const html = (body, status = 200) =>
 
 async function install(url) {
   try {
-    const r = await fetch('https://app.didar.me/api/MarketplaceInstall/CompleteInstallation', {
+    const r = await loggedFetch('didar_install', 'https://app.didar.me/api/MarketplaceInstall/CompleteInstallation', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -95,19 +96,24 @@ async function panel(url) {
   }
 }
 
+function route(request) {
+  const url = new URL(request.url);
+  if (request.method !== 'GET') return new Response('Method Not Allowed', { status: 405 });
+  switch (url.pathname) {
+    case '/panel':
+      return panel(url);
+    case '/install/callback':
+      return install(url);
+    case '/healthz':
+      return Response.json({ ok: true });
+    default:
+      return new Response('Not Found', { status: 404 });
+  }
+}
+
 export default {
-  async fetch(request) {
-    const url = new URL(request.url);
-    if (request.method !== 'GET') return new Response('Method Not Allowed', { status: 405 });
-    switch (url.pathname) {
-      case '/panel':
-        return panel(url);
-      case '/install/callback':
-        return install(url);
-      case '/healthz':
-        return Response.json({ ok: true });
-      default:
-        return new Response('Not Found', { status: 404 });
-    }
+  // Every request (any path, any method) is recorded in inbound_requests.
+  fetch(request, _env, ctx) {
+    return withInboundLog(request, ctx, route);
   },
 };

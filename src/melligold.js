@@ -1,4 +1,5 @@
 import { env } from 'cloudflare:workers';
+import { loggedFetch } from './log.js';
 
 export class MelligoldUnavailableError extends Error {}
 
@@ -8,9 +9,14 @@ export class MelligoldUnavailableError extends Error {}
  * MELLIGOLD_BASE_URL over HTTP, e.g. for a real Melli Gold API later.
  */
 function request(path, init) {
-  if (env.MELLIGOLD) return env.MELLIGOLD.fetch(new Request(`https://melligold.internal${path}`, init));
+  if (env.MELLIGOLD) {
+    // Logged URL host "melligold.internal" means the call went over the service binding.
+    return loggedFetch('melligold', `https://melligold.internal${path}`, init, {
+      fetcher: (u, i) => env.MELLIGOLD.fetch(new Request(u, i)),
+    });
+  }
   const base = (process.env.MELLIGOLD_BASE_URL || '').replace(/\/$/, '');
-  return fetch(`${base}${path}`, init);
+  return loggedFetch('melligold', `${base}${path}`, init);
 }
 
 /** Returns the data-source response body, or null on 404. Throws MelligoldUnavailableError otherwise. */
